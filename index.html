@@ -3,112 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Penghitung Kerumunan & Benda Pintar</title>
-    <!-- Tailwind CSS untuk Desain Profesional -->
+    <title>Smart Crowd & Object Counter - Professional Edition</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- TensorFlow.js dan Model COCO-SSD untuk Deteksi Orang -->
+    <!-- TensorFlow.js dan COCO-SSD -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
-    <!-- FontAwesome untuk Ikon -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
 
     <!-- Header -->
-    <header class="bg-indigo-600 text-white shadow-md py-4 px-6">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center">
-            <h1 class="text-2xl font-bold flex items-center gap-2">
-                <i class="fa-solid fa-users-viewfinder"></i> Smart Crowd & Object Counter
+    <header class="bg-slate-900 text-white shadow-lg py-4 px-6 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-bullseye text-indigo-400"></i> Smart Precision Counter Pro
             </h1>
-            <p class="text-sm text-indigo-200 mt-1 md:mt-0">Penghitung Kerumunan Orang & Susunan Benda (Acak/Teratur)</p>
+            <p class="text-xs text-slate-400 mt-1 md:mt-0">Sistem Penghitung Kerumunan & Benda Presisi Tinggi</p>
         </div>
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-6xl mx-auto p-4 md:p-6 flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+    <main class="max-w-7xl mx-auto p-4 md:p-6 flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6 w-full">
         
-        <!-- Panel Kontrol (Kiri) -->
-        <div class="lg:col-span-1 bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-5">
-            <h2 class="text-lg font-semibold border-b pb-2 flex items-center gap-2 text-indigo-600">
-                <i class="fa-solid fa-sliders"></i> Panel Kontrol
+        <!-- Panel Kontrol (Kiri - 1 Kolom) -->
+        <div class="lg:col-span-1 bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-4">
+            <h2 class="text-md font-semibold border-b pb-2 flex items-center gap-2 text-indigo-600">
+                <i class="fa-solid fa-sliders"></i> Panel Konfigurasi
             </h2>
 
             <!-- Pilih Mode -->
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Pilih Mode Analisis:</label>
-                <select id="modeSelect" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <option value="crowd">👥 Kerumunan Orang (AI Detection)</option>
-                    <option value="objects">📦 Susunan Benda (Blob / Kontur)</option>
-                    <option value="manual">🖱️ Hitung Manual (Klik Gambar)</option>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Mode Kerja:</label>
+                <select id="modeSelect" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <option value="crowd">👥 Kerumunan Orang (AI)</option>
+                    <option value="objects">📦 Susunan Benda (Algoritma)</option>
+                    <option value="manual">🖱️ Hitung Manual (Klik)</option>
                 </select>
             </div>
 
-            <!-- Upload Gambar / Kamera -->
+            <!-- Sumber Gambar -->
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Sumber Gambar:</label>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Sumber Media:</label>
                 <div class="flex gap-2">
-                    <label class="flex-grow cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 p-2.5 rounded-lg text-center font-medium text-sm transition flex items-center justify-center gap-2">
+                    <label class="flex-grow cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 p-2 rounded-lg text-center font-medium text-xs transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-upload"></i> Unggah Foto
                         <input type="file" id="imageLoader" accept="image/*" class="hidden">
                     </label>
-                    <button id="camBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-4 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2" title="Buka Kamera">
+                    <button id="camBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1" title="Kamera">
                         <i class="fa-solid fa-camera"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Pengaturan Deteksi Benda (Muncul jika mode objects) -->
-            <div id="objectSettings" class="hidden flex flex-col gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Parameter Deteksi Benda</h3>
+            <!-- Parameter Pengaturan AI (Mode Crowd) -->
+            <div id="aiSettings" class="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Parameter AI (Orang)</h3>
                 <div>
-                    <label class="text-xs font-medium text-slate-600 block mb-1">Ambang Batas Warna (Threshold): <span id="threshVal">120</span></label>
-                    <input type="range" id="thresholdRange" min="50" max="220" value="120" class="w-full accent-indigo-600">
-                </div>
-                <div>
-                    <label class="text-xs font-medium text-slate-600 block mb-1">Ukuran Minimum Objek (Noise Filter): <span id="minSizeVal">15</span> px</label>
-                    <input type="range" id="minSizeRange" min="5" max="50" value="15" class="w-full accent-indigo-600">
+                    <label class="text-xs text-slate-600 block mb-1">Tingkat Keyakinan (Confidence): <span id="confVal" class="font-bold">40</span>%</label>
+                    <input type="range" id="confidenceRange" min="10" max="90" value="40" class="w-full accent-indigo-600">
                 </div>
             </div>
 
-            <!-- Tombol Proses -->
-            <button id="processBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium p-2.5 rounded-lg transition shadow-md flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed">
-                <i class="fa-solid fa-play"></i> Mulai Hitung
+            <!-- Parameter Pengaturan Benda (Mode Objects) -->
+            <div id="objectSettings" class="hidden flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Parameter Benda</h3>
+                <div>
+                    <label class="text-xs text-slate-600 block mb-1">Sensitivitas Kontras: <span id="threshVal" class="font-bold">120</span></label>
+                    <input type="range" id="thresholdRange" min="40" max="220" value="120" class="w-full accent-indigo-600">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-600 block mb-1">Filter Ukuran Min (Noise): <span id="minSizeVal" class="font-bold">10</span> px</label>
+                    <input type="range" id="minSizeRange" min="3" max="40" value="10" class="w-full accent-indigo-600">
+                </div>
+            </div>
+
+            <!-- Tombol Aksi -->
+            <button id="processBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium p-2.5 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-play"></i> Proses Hitung Otomatis
             </button>
 
-            <!-- Reset -->
-            <button id="resetBtn" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium p-2 rounded-lg transition text-sm">
-                <i class="fa-solid fa-rotate-right"></i> Reset / Hapus Titik
+            <!-- Koreksi & Reset -->
+            <div class="grid grid-cols-2 gap-2">
+                <button id="undoBtn" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-medium p-2 rounded-lg text-xs transition flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-rotate-left"></i> Undo Titik
+                </button>
+                <button id="resetBtn" class="bg-rose-100 hover:bg-rose-200 text-rose-800 font-medium p-2 rounded-lg text-xs transition flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-trash"></i> Reset Semua
+                </button>
+            </div>
+
+            <!-- Ekspor Laporan -->
+            <button id="exportBtn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium p-2 rounded-lg text-xs transition flex items-center justify-center gap-2 disabled:bg-slate-300" disabled>
+                <i class="fa-solid fa-download"></i> Unduh Hasil & Gambar
             </button>
 
             <!-- Statistik Hasil -->
-            <div class="mt-auto bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center">
-                <span class="text-sm font-medium text-indigo-600 block">Total Terhitung</span>
+            <div class="mt-auto bg-indigo-50 border border-indigo-100 p-3 rounded-xl text-center">
+                <span class="text-xs font-semibold text-indigo-600 block uppercase tracking-wider">Total Hasil Hitung</span>
                 <span id="counterResult" class="text-4xl font-extrabold text-indigo-700">0</span>
-                <span id="statusText" class="text-xs text-slate-500 mt-1 block">Silakan unggah gambar terlebih dahulu.</span>
+                <span id="statusText" class="text-xs text-slate-500 mt-1 block">Silakan unggah foto.</span>
             </div>
         </div>
 
-        <!-- Area Tampilan Gambar / Canvas (Kanan) -->
-        <div class="lg:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center relative min-h-[400px]">
+        <!-- Area Tampilan Gambar / Canvas (Kanan - 3 Kolom) -->
+        <div class="lg:col-span-3 bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center relative min-h-[450px]">
             <div id="placeholder" class="text-center text-slate-400 flex flex-col items-center justify-center p-8">
                 <i class="fa-solid fa-image text-5xl mb-3 text-slate-300"></i>
                 <p class="text-sm font-medium">Belum ada gambar yang dimuat.</p>
-                <p class="text-xs text-slate-400 mt-1">Gunakan panel sebelah kiri untuk mengunggah foto atau menggunakan kamera.</p>
+                <p class="text-xs text-slate-400 mt-1">Gunakan panel konfigurasi untuk memulai.</p>
             </div>
             
-            <!-- Canvas / Video Container -->
-            <div class="relative max-w-full overflow-hidden rounded-lg shadow-inner bg-black hidden" id="canvasContainer">
+            <!-- Canvas Container -->
+            <div class="relative max-w-full overflow-auto rounded-lg shadow-inner bg-black hidden max-h-[70vh]" id="canvasContainer">
                 <canvas id="canvas" class="max-w-full h-auto block cursor-crosshair"></canvas>
                 <video id="videoElement" class="hidden max-w-full h-auto" autoplay playsinline></video>
             </div>
 
-            <!-- Tombol Ambil Foto dari Kamera (Modal/Inline) -->
+            <!-- Tombol Kamera Kontrol -->
             <div id="camControl" class="hidden mt-3 flex gap-2">
-                <button id="captureBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                    <i class="fa-solid fa-camera-retro"></i> Ambil Foto Sekarang
+                <button id="captureBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-2">
+                    <i class="fa-solid fa-camera-retro"></i> Ambil Foto
                 </button>
-                <button id="closeCamBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                    Tutup Kamera
+                <button id="closeCamBtn" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg text-xs font-medium">
+                    Tutup
                 </button>
             </div>
         </div>
@@ -117,10 +136,10 @@
 
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 mt-auto">
-        &copy; 2026 Smart Crowd & Object Counter &bull; Dibangun untuk Kebutuhan Profesional & Edukasi
+        &copy; 2026 Smart Precision Counter Pro &bull; Profesional Web Vision Tool
     </footer>
 
-    <!-- JavaScript Aplikasi -->
+    <!-- Skrip Aplikasi -->
     <script>
         const imageLoader = document.getElementById('imageLoader');
         const canvas = document.getElementById('canvas');
@@ -129,10 +148,16 @@
         const canvasContainer = document.getElementById('canvasContainer');
         const processBtn = document.getElementById('processBtn');
         const resetBtn = document.getElementById('resetBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const exportBtn = document.getElementById('exportBtn');
         const counterResult = document.getElementById('counterResult');
         const statusText = document.getElementById('statusText');
         const modeSelect = document.getElementById('modeSelect');
+        
+        const aiSettings = document.getElementById('aiSettings');
         const objectSettings = document.getElementById('objectSettings');
+        const confidenceRange = document.getElementById('confidenceRange');
+        const confVal = document.getElementById('confVal');
         const thresholdRange = document.getElementById('thresholdRange');
         const threshVal = document.getElementById('threshVal');
         const minSizeRange = document.getElementById('minSizeRange');
@@ -147,37 +172,42 @@
         let img = new Image();
         let isImageLoaded = false;
         let cocoModel = null;
-        let manualPoints = [];
+        let detectedPoints = []; // Menyimpan titik/objek terhitung
         let isCameraActive = false;
         let stream = null;
 
-        // Load Model COCO-SSD saat halaman dimuat di latar belakang
+        // Muat Model AI
         async function loadModel() {
-            statusText.textContent = "Memuat model AI pendeteksi kerumunan...";
+            statusText.textContent = "Memuat model AI...";
             try {
                 cocoModel = await cocoSsd.load();
-                statusText.textContent = "Model AI siap digunakan.";
+                statusText.textContent = "Model AI siap.";
             } catch (err) {
                 console.error(err);
-                statusText.textContent = "Gagal memuat model AI (Gunakan mode Manual/Benda).";
+                statusText.textContent = "Model AI gagal dimuat (Gunakan mode Manual/Benda).";
             }
         }
         loadModel();
 
-        // Toggle pengaturan benda berdasarkan mode
+        // Pengaturan Tampilan Panel Berdasarkan Mode
         modeSelect.addEventListener('change', (e) => {
-            if (e.target.value === 'objects') {
-                objectSettings.classList.remove('hidden');
-            } else {
-                objectSettings.classList.add('hidden');
+            const mode = e.target.value;
+            aiSettings.classList.add('hidden');
+            objectSettings.classList.add('hidden');
+
+            if (mode === 'crowd') aiSettings.classList.remove('hidden');
+            if (mode === 'objects') objectSettings.classList.remove('hidden');
+            
+            if (isImageLoaded) {
+                redrawCanvas();
             }
-            if (isImageLoaded) redrawCanvas();
         });
 
+        confidenceRange.addEventListener('input', (e) => confVal.textContent = e.target.value);
         thresholdRange.addEventListener('input', (e) => threshVal.textContent = e.target.value);
         minSizeRange.addEventListener('input', (e) => minSizeVal.textContent = e.target.value);
 
-        // Handle Upload Gambar
+        // Unggah Gambar
         imageLoader.addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -198,16 +228,16 @@
             videoElement.classList.add('hidden');
             camControl.classList.add('hidden');
 
-            // Set ukuran canvas sesuai gambar asli
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
             
             isImageLoaded = true;
-            manualPoints = [];
+            detectedPoints = [];
             counterResult.textContent = '0';
             statusText.textContent = 'Gambar siap diproses.';
             processBtn.disabled = false;
+            exportBtn.disabled = false;
         }
 
         function redrawCanvas() {
@@ -215,103 +245,95 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
 
-            // Jika ada titik manual, gambar ulang
-            if (modeSelect.value === 'manual') {
-                manualPoints.forEach((pt, index) => {
-                    drawMarker(pt.x, pt.y, index + 1);
-                });
-            }
+            // Gambar ulang semua titik/deteksi yang tersimpan
+            detectedPoints.forEach((pt, index) => {
+                if (pt.type === 'box') {
+                    // Gambar Bounding Box (AI)
+                    ctx.strokeStyle = '#22c55e';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(pt.x, pt.y, pt.w, pt.h);
+
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(pt.x, pt.y > 20 ? pt.y - 20 : 0, 35, 20);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.fillText(`#${index + 1}`, pt.x + 18, pt.y > 20 ? pt.y - 10 : 10);
+                } else {
+                    // Gambar Titik Lingkaran (Manual / Objek)
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, 7, 0, 2 * Math.PI);
+                    ctx.fillStyle = pt.color || 'rgba(59, 130, 246, 0.85)';
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(index + 1, pt.x, pt.y);
+                }
+            });
         }
 
-        function drawMarker(x, y, label) {
-            ctx.beginPath();
-            ctx.arc(x, y, 8, 0, 2 * Math.PI);
-            ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
-            ctx.fill();
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#ffffff';
-            ctx.stroke();
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 10px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(label, x, y);
-        }
-
-        // Interaksi Klik Manual pada Canvas
+        // Interaksi Klik Manual
         canvas.addEventListener('click', (e) => {
             if (modeSelect.value !== 'manual' || !isImageLoaded) return;
 
             const rect = canvas.getBoundingClientRect();
-            // Skalakan koordinat klik ke ukuran asli canvas
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
             const x = (e.clientX - rect.left) * scaleX;
             const y = (e.clientY - rect.top) * scaleY;
 
-            manualPoints.push({ x, y });
+            detectedPoints.push({ x, y, type: 'dot', color: 'rgba(239, 68, 68, 0.9)' });
             redrawCanvas();
-            counterResult.textContent = manualPoints.length;
-            statusText.textContent = `Titik manual ditambahkan (${manualPoints.length}).`;
+            counterResult.textContent = detectedPoints.length;
+            statusText.textContent = `Titik manual #${detectedPoints.length} ditambahkan.`;
         });
 
         // Tombol Proses Utama
         processBtn.addEventListener('click', async () => {
             if (!isImageLoaded) return;
             const mode = modeSelect.value;
+            detectedPoints = []; // Reset hasil sebelumnya untuk hitung otomatis
 
             if (mode === 'crowd') {
                 await detectCrowdAI();
             } else if (mode === 'objects') {
-                detectObjectsAlgorithm();
-            } else if (mode === 'manual') {
-                statusText.textContent = 'Gunakan klik pada gambar untuk menandai objek.';
+                detectObjectsAdvanced();
             }
         });
 
-        // 1. Deteksi Kerumunan Orang dengan AI (COCO-SSD)
+        // 1. AI Crowd Detection yang Ditingkatkan
         async function detectCrowdAI() {
             if (!cocoModel) {
-                alert("Model AI belum siap. Harap tunggu sebentar.");
+                alert("Model AI belum siap.");
                 return;
             }
-            statusText.textContent = "Sedang mendeteksi orang dalam kerumunan...";
+            statusText.textContent = "Mendeteksi orang dengan AI...";
             processBtn.disabled = true;
 
-            redrawCanvas();
-
-            // Deteksi objek (person)
             const predictions = await cocoModel.detect(canvas);
-            const persons = predictions.filter(p => p.class === 'person');
+            const minConfidence = parseInt(confidenceRange.value) / 100;
+            
+            // Filter hanya kelas 'person' dan melewati confidence threshold
+            const persons = predictions.filter(p => p.class === 'person' && p.score >= minConfidence);
 
-            persons.forEach((p, index) => {
+            persons.forEach(p => {
                 const [x, y, width, height] = p.bbox;
-                
-                // Gambar bounding box
-                ctx.strokeStyle = '#22c55e';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(x, y, width, height);
-
-                // Label titik tengah kepala/orang
-                const cx = x + width / 2;
-                const cy = y + 15; // Estimasi posisi kepala
-                
-                ctx.fillStyle = '#22c55e';
-                ctx.fillRect(x, y > 20 ? y - 20 : 0, 35, 20);
-                
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillText(`#${index + 1}`, x + 18, y > 20 ? y - 10 : 10);
+                detectedPoints.push({ x, y, w: width, h: height, type: 'box' });
             });
 
-            counterResult.textContent = persons.length;
-            statusText.textContent = `Berhasil mendeteksi ${persons.length} orang.`;
+            redrawCanvas();
+            counterResult.textContent = detectedPoints.length;
+            statusText.textContent = `Terdeteksi ${detectedPoints.length} orang (Keyakinan > ${confidenceRange.value}%).`;
             processBtn.disabled = false;
         }
 
-        // 2. Algoritme Hitung Benda (Acak/Teratur via Blob/Kontur Sederhana di Canvas)
-        function detectObjectsAlgorithm() {
+        // 2. Deteksi Benda yang Lebih Presisi (Blob & Center of Mass)
+        function detectObjectsAdvanced() {
             statusText.textContent = "Menganalisis susunan benda...";
             redrawCanvas();
 
@@ -322,39 +344,38 @@
             const threshold = parseInt(thresholdRange.value);
             const minSize = parseInt(minSizeRange.value);
 
-            // Konversi ke Grayscale & Binarisasi sederhana
             let bw = new Uint8Array(width * height);
+            
+            // Konversi Grayscale & Binarisasi adaptif
             for (let i = 0; i < data.length; i += 4) {
-                let avg = (data[i] + data[i+1] + data[i+2]) / 3;
-                // Asumsi benda kontras dengan latar (bisa disesuaikan)
+                let avg = (data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114); // Standard luminance formula
                 bw[i / 4] = avg < threshold ? 1 : 0; 
             }
 
-            // Simple Connected Component Labeling / Centroid Detection
             let visited = new Uint8Array(width * height);
             let objects = [];
+            const step = Math.max(1, Math.floor(Math.min(width, height) / 400)); // Dinamis berdasarkan resolusi
 
-            for (let y = 0; y < height; y += 3) { // Step 3 untuk performa
-                for (let x = 0; x < width; x += 3) {
+            for (let y = 0; y < height; y += step) {
+                for (let x = 0; x < width; x += step) {
                     let idx = y * width + x;
                     if (bw[idx] === 1 && visited[idx] === 0) {
-                        // BFS sederhana untuk mencari blob
                         let queue = [{x, y}];
                         visited[idx] = 1;
                         let count = 0;
                         let sumX = 0, sumY = 0;
 
-                        while(queue.length > 0 && queue.length < 2000) {
+                        while(queue.length > 0 && queue.length < 5000) {
                             let curr = queue.pop();
                             count++;
                             sumX += curr.x;
                             sumY += curr.y;
 
                             let neighbors = [
-                                {x: curr.x + 3, y: curr.y},
-                                {x: curr.x - 3, y: curr.y},
-                                {x: curr.x, y: curr.y + 3},
-                                {x: curr.x, y: curr.y - 3}
+                                {x: curr.x + step, y: curr.y},
+                                {x: curr.x - step, y: curr.y},
+                                {x: curr.x, y: curr.y + step},
+                                {x: curr.x, y: curr.y - step}
                             ];
 
                             for(let n of neighbors) {
@@ -369,37 +390,46 @@
                         }
 
                         if(count >= minSize) {
-                            objects.push({ x: sumX / count, y: sumY / count });
+                            objects.push({ x: sumX / count, y: sumY / count, type: 'dot', color: 'rgba(59, 130, 246, 0.9)' });
                         }
                     }
                 }
             }
 
-            // Tandai objek yang ditemukan
-            objects.forEach((obj, idx) => {
-                ctx.beginPath();
-                ctx.arc(obj.x, obj.y, 6, 0, 2 * Math.PI);
-                ctx.fillStyle = '#3b82f6';
-                ctx.fill();
-                ctx.lineWidth = 1.5;
-                ctx.strokeStyle = '#ffffff';
-                ctx.stroke();
-            });
-
-            counterResult.textContent = objects.length;
-            statusText.textContent = `Ditemukan ${objects.length} susunan/objek benda.`;
+            detectedPoints = objects;
+            redrawCanvas();
+            counterResult.textContent = detectedPoints.length;
+            statusText.textContent = `Ditemukan ${detectedPoints.length} susunan benda.`;
         }
 
-        // Reset
+        // Tombol Undo Titik Terakhir
+        undoBtn.addEventListener('click', () => {
+            if (detectedPoints.length === 0) return;
+            detectedPoints.pop();
+            redrawCanvas();
+            counterResult.textContent = detectedPoints.length;
+            statusText.textContent = "Titik terakhir dihapus (Undo).";
+        });
+
+        // Reset Semua
         resetBtn.addEventListener('click', () => {
             if (!isImageLoaded) return;
-            manualPoints = [];
+            detectedPoints = [];
             redrawCanvas();
             counterResult.textContent = '0';
             statusText.textContent = 'Data direset.';
         });
 
-        // Kontrol Kamera
+        // Ekspor Hasil
+        exportBtn.addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            const link = document.createElement('a');
+            link.download = `hasil-hitung-${counterResult.textContent}-objek.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Kamera Kontrol
         camBtn.addEventListener('click', async () => {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -410,9 +440,9 @@
                 canvas.style.display = 'none';
                 camControl.classList.remove('hidden');
                 isCameraActive = true;
-                statusText.textContent = 'Kamera aktif. Silakan ambil foto.';
+                statusText.textContent = 'Kamera aktif.';
             } catch (err) {
-                alert("Tidak dapat mengakses kamera: " + err.message);
+                alert("Akses kamera ditolak/gagal: " + err.message);
             }
         });
 
@@ -425,11 +455,8 @@
             img.src = canvas.toDataURL('image/png');
             stopCamera();
             canvas.style.display = 'block';
-            isImageLoaded = true;
-            manualPoints = [];
-            counterResult.textContent = '0';
-            statusText.textContent = 'Foto dari kamera berhasil diambil.';
-            processBtn.disabled = false;
+            initCanvasWithImage();
+            statusText.textContent = 'Foto kamera dimuat.';
         });
 
         closeCamBtn.addEventListener('click', () => {

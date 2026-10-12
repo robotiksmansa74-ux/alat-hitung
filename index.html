@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Penghitung Kerumunan & Benda Pintar</title>
+    <!-- Tailwind CSS untuk Desain Profesional -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- TensorFlow.js dan Model COCO-SSD untuk Deteksi Orang -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+    <!-- FontAwesome untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-md py-4 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-users-viewfinder"></i> Smart Crowd & Object Counter
+            </h1>
+            <p class="text-sm text-indigo-200 mt-1 md:mt-0">Penghitung Kerumunan Orang & Susunan Benda (Acak/Teratur)</p>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto p-4 md:p-6 flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+        
+        <!-- Panel Kontrol (Kiri) -->
+        <div class="lg:col-span-1 bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-5">
+            <h2 class="text-lg font-semibold border-b pb-2 flex items-center gap-2 text-indigo-600">
+                <i class="fa-solid fa-sliders"></i> Panel Kontrol
+            </h2>
+
+            <!-- Pilih Mode -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Pilih Mode Analisis:</label>
+                <select id="modeSelect" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <option value="crowd">👥 Kerumunan Orang (AI Detection)</option>
+                    <option value="objects">📦 Susunan Benda (Blob / Kontur)</option>
+                    <option value="manual">🖱️ Hitung Manual (Klik Gambar)</option>
+                </select>
+            </div>
+
+            <!-- Upload Gambar / Kamera -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Sumber Gambar:</label>
+                <div class="flex gap-2">
+                    <label class="flex-grow cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 p-2.5 rounded-lg text-center font-medium text-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-upload"></i> Unggah Foto
+                        <input type="file" id="imageLoader" accept="image/*" class="hidden">
+                    </label>
+                    <button id="camBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-4 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2" title="Buka Kamera">
+                        <i class="fa-solid fa-camera"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pengaturan Deteksi Benda (Muncul jika mode objects) -->
+            <div id="objectSettings" class="hidden flex flex-col gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Parameter Deteksi Benda</h3>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Ambang Batas Warna (Threshold): <span id="threshVal">120</span></label>
+                    <input type="range" id="thresholdRange" min="50" max="220" value="120" class="w-full accent-indigo-600">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 block mb-1">Ukuran Minimum Objek (Noise Filter): <span id="minSizeVal">15</span> px</label>
+                    <input type="range" id="minSizeRange" min="5" max="50" value="15" class="w-full accent-indigo-600">
+                </div>
+            </div>
+
+            <!-- Tombol Proses -->
+            <button id="processBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium p-2.5 rounded-lg transition shadow-md flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-play"></i> Mulai Hitung
+            </button>
+
+            <!-- Reset -->
+            <button id="resetBtn" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium p-2 rounded-lg transition text-sm">
+                <i class="fa-solid fa-rotate-right"></i> Reset / Hapus Titik
+            </button>
+
+            <!-- Statistik Hasil -->
+            <div class="mt-auto bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center">
+                <span class="text-sm font-medium text-indigo-600 block">Total Terhitung</span>
+                <span id="counterResult" class="text-4xl font-extrabold text-indigo-700">0</span>
+                <span id="statusText" class="text-xs text-slate-500 mt-1 block">Silakan unggah gambar terlebih dahulu.</span>
+            </div>
+        </div>
+
+        <!-- Area Tampilan Gambar / Canvas (Kanan) -->
+        <div class="lg:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center relative min-h-[400px]">
+            <div id="placeholder" class="text-center text-slate-400 flex flex-col items-center justify-center p-8">
+                <i class="fa-solid fa-image text-5xl mb-3 text-slate-300"></i>
+                <p class="text-sm font-medium">Belum ada gambar yang dimuat.</p>
+                <p class="text-xs text-slate-400 mt-1">Gunakan panel sebelah kiri untuk mengunggah foto atau menggunakan kamera.</p>
+            </div>
+            
+            <!-- Canvas / Video Container -->
+            <div class="relative max-w-full overflow-hidden rounded-lg shadow-inner bg-black hidden" id="canvasContainer">
+                <canvas id="canvas" class="max-w-full h-auto block cursor-crosshair"></canvas>
+                <video id="videoElement" class="hidden max-w-full h-auto" autoplay playsinline></video>
+            </div>
+
+            <!-- Tombol Ambil Foto dari Kamera (Modal/Inline) -->
+            <div id="camControl" class="hidden mt-3 flex gap-2">
+                <button id="captureBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                    <i class="fa-solid fa-camera-retro"></i> Ambil Foto Sekarang
+                </button>
+                <button id="closeCamBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    Tutup Kamera
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 mt-auto">
+        &copy; 2026 Smart Crowd & Object Counter &bull; Dibangun untuk Kebutuhan Profesional & Edukasi
+    </footer>
+
+    <!-- JavaScript Aplikasi -->
+    <script>
+        const imageLoader = document.getElementById('imageLoader');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const placeholder = document.getElementById('placeholder');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const processBtn = document.getElementById('processBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const counterResult = document.getElementById('counterResult');
+        const statusText = document.getElementById('statusText');
+        const modeSelect = document.getElementById('modeSelect');
+        const objectSettings = document.getElementById('objectSettings');
+        const thresholdRange = document.getElementById('thresholdRange');
+        const threshVal = document.getElementById('threshVal');
+        const minSizeRange = document.getElementById('minSizeRange');
+        const minSizeVal = document.getElementById('minSizeVal');
+        
+        const camBtn = document.getElementById('camBtn');
+        const videoElement = document.getElementById('videoElement');
+        const camControl = document.getElementById('camControl');
+        const captureBtn = document.getElementById('captureBtn');
+        const closeCamBtn = document.getElementById('closeCamBtn');
+
+        let img = new Image();
+        let isImageLoaded = false;
+        let cocoModel = null;
+        let manualPoints = [];
+        let isCameraActive = false;
+        let stream = null;
+
+        // Load Model COCO-SSD saat halaman dimuat di latar belakang
+        async function loadModel() {
+            statusText.textContent = "Memuat model AI pendeteksi kerumunan...";
+            try {
+                cocoModel = await cocoSsd.load();
+                statusText.textContent = "Model AI siap digunakan.";
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = "Gagal memuat model AI (Gunakan mode Manual/Benda).";
+            }
+        }
+        loadModel();
+
+        // Toggle pengaturan benda berdasarkan mode
+        modeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'objects') {
+                objectSettings.classList.remove('hidden');
+            } else {
+                objectSettings.classList.add('hidden');
+            }
+            if (isImageLoaded) redrawCanvas();
+        });
+
+        thresholdRange.addEventListener('input', (e) => threshVal.textContent = e.target.value);
+        minSizeRange.addEventListener('input', (e) => minSizeVal.textContent = e.target.value);
+
+        // Handle Upload Gambar
+        imageLoader.addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                img.onload = function() {
+                    initCanvasWithImage();
+                }
+                img.src = event.target.result;
+            }
+            if(e.target.files[0]) {
+                reader.readAsDataURL(e.target.files[0]);
+                if (isCameraActive) stopCamera();
+            }
+        });
+
+        function initCanvasWithImage() {
+            placeholder.classList.add('hidden');
+            canvasContainer.classList.remove('hidden');
+            videoElement.classList.add('hidden');
+            camControl.classList.add('hidden');
+
+            // Set ukuran canvas sesuai gambar asli
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            
+            isImageLoaded = true;
+            manualPoints = [];
+            counterResult.textContent = '0';
+            statusText.textContent = 'Gambar siap diproses.';
+            processBtn.disabled = false;
+        }
+
+        function redrawCanvas() {
+            if (!isImageLoaded) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+
+            // Jika ada titik manual, gambar ulang
+            if (modeSelect.value === 'manual') {
+                manualPoints.forEach((pt, index) => {
+                    drawMarker(pt.x, pt.y, index + 1);
+                });
+            }
+        }
+
+        function drawMarker(x, y, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x, y);
+        }
+
+        // Interaksi Klik Manual pada Canvas
+        canvas.addEventListener('click', (e) => {
+            if (modeSelect.value !== 'manual' || !isImageLoaded) return;
+
+            const rect = canvas.getBoundingClientRect();
+            // Skalakan koordinat klik ke ukuran asli canvas
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+
+            manualPoints.push({ x, y });
+            redrawCanvas();
+            counterResult.textContent = manualPoints.length;
+            statusText.textContent = `Titik manual ditambahkan (${manualPoints.length}).`;
+        });
+
+        // Tombol Proses Utama
+        processBtn.addEventListener('click', async () => {
+            if (!isImageLoaded) return;
+            const mode = modeSelect.value;
+
+            if (mode === 'crowd') {
+                await detectCrowdAI();
+            } else if (mode === 'objects') {
+                detectObjectsAlgorithm();
+            } else if (mode === 'manual') {
+                statusText.textContent = 'Gunakan klik pada gambar untuk menandai objek.';
+            }
+        });
+
+        // 1. Deteksi Kerumunan Orang dengan AI (COCO-SSD)
+        async function detectCrowdAI() {
+            if (!cocoModel) {
+                alert("Model AI belum siap. Harap tunggu sebentar.");
+                return;
+            }
+            statusText.textContent = "Sedang mendeteksi orang dalam kerumunan...";
+            processBtn.disabled = true;
+
+            redrawCanvas();
+
+            // Deteksi objek (person)
+            const predictions = await cocoModel.detect(canvas);
+            const persons = predictions.filter(p => p.class === 'person');
+
+            persons.forEach((p, index) => {
+                const [x, y, width, height] = p.bbox;
+                
+                // Gambar bounding box
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x, y, width, height);
+
+                // Label titik tengah kepala/orang
+                const cx = x + width / 2;
+                const cy = y + 15; // Estimasi posisi kepala
+                
+                ctx.fillStyle = '#22c55e';
+                ctx.fillRect(x, y > 20 ? y - 20 : 0, 35, 20);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(`#${index + 1}`, x + 18, y > 20 ? y - 10 : 10);
+            });
+
+            counterResult.textContent = persons.length;
+            statusText.textContent = `Berhasil mendeteksi ${persons.length} orang.`;
+            processBtn.disabled = false;
+        }
+
+        // 2. Algoritme Hitung Benda (Acak/Teratur via Blob/Kontur Sederhana di Canvas)
+        function detectObjectsAlgorithm() {
+            statusText.textContent = "Menganalisis susunan benda...";
+            redrawCanvas();
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            const width = canvas.width;
+            const height = canvas.height;
+            const threshold = parseInt(thresholdRange.value);
+            const minSize = parseInt(minSizeRange.value);
+
+            // Konversi ke Grayscale & Binarisasi sederhana
+            let bw = new Uint8Array(width * height);
+            for (let i = 0; i < data.length; i += 4) {
+                let avg = (data[i] + data[i+1] + data[i+2]) / 3;
+                // Asumsi benda kontras dengan latar (bisa disesuaikan)
+                bw[i / 4] = avg < threshold ? 1 : 0; 
+            }
+
+            // Simple Connected Component Labeling / Centroid Detection
+            let visited = new Uint8Array(width * height);
+            let objects = [];
+
+            for (let y = 0; y < height; y += 3) { // Step 3 untuk performa
+                for (let x = 0; x < width; x += 3) {
+                    let idx = y * width + x;
+                    if (bw[idx] === 1 && visited[idx] === 0) {
+                        // BFS sederhana untuk mencari blob
+                        let queue = [{x, y}];
+                        visited[idx] = 1;
+                        let count = 0;
+                        let sumX = 0, sumY = 0;
+
+                        while(queue.length > 0 && queue.length < 2000) {
+                            let curr = queue.pop();
+                            count++;
+                            sumX += curr.x;
+                            sumY += curr.y;
+
+                            let neighbors = [
+                                {x: curr.x + 3, y: curr.y},
+                                {x: curr.x - 3, y: curr.y},
+                                {x: curr.x, y: curr.y + 3},
+                                {x: curr.x, y: curr.y - 3}
+                            ];
+
+                            for(let n of neighbors) {
+                                if(n.x >= 0 && n.x < width && n.y >= 0 && n.y < height) {
+                                    let nIdx = n.y * width + n.x;
+                                    if(bw[nIdx] === 1 && visited[nIdx] === 0) {
+                                        visited[nIdx] = 1;
+                                        queue.push(n);
+                                    }
+                                }
+                            }
+                        }
+
+                        if(count >= minSize) {
+                            objects.push({ x: sumX / count, y: sumY / count });
+                        }
+                    }
+                }
+            }
+
+            // Tandai objek yang ditemukan
+            objects.forEach((obj, idx) => {
+                ctx.beginPath();
+                ctx.arc(obj.x, obj.y, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = '#3b82f6';
+                ctx.fill();
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+            });
+
+            counterResult.textContent = objects.length;
+            statusText.textContent = `Ditemukan ${objects.length} susunan/objek benda.`;
+        }
+
+        // Reset
+        resetBtn.addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            manualPoints = [];
+            redrawCanvas();
+            counterResult.textContent = '0';
+            statusText.textContent = 'Data direset.';
+        });
+
+        // Kontrol Kamera
+        camBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                videoElement.srcObject = stream;
+                placeholder.classList.add('hidden');
+                canvasContainer.classList.remove('hidden');
+                videoElement.classList.remove('hidden');
+                canvas.style.display = 'none';
+                camControl.classList.remove('hidden');
+                isCameraActive = true;
+                statusText.textContent = 'Kamera aktif. Silakan ambil foto.';
+            } catch (err) {
+                alert("Tidak dapat mengakses kamera: " + err.message);
+            }
+        });
+
+        captureBtn.addEventListener('click', () => {
+            if (!isCameraActive) return;
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            
+            img.src = canvas.toDataURL('image/png');
+            stopCamera();
+            canvas.style.display = 'block';
+            isImageLoaded = true;
+            manualPoints = [];
+            counterResult.textContent = '0';
+            statusText.textContent = 'Foto dari kamera berhasil diambil.';
+            processBtn.disabled = false;
+        });
+
+        closeCamBtn.addEventListener('click', () => {
+            stopCamera();
+            if (!isImageLoaded) placeholder.classList.remove('hidden');
+        });
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            videoElement.classList.add('hidden');
+            camControl.classList.add('hidden');
+            isCameraActive = false;
+        }
+    </script>
+</body>
+</html>
